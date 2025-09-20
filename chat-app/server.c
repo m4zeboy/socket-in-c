@@ -39,46 +39,83 @@ Converts the string pointed to, by the argument str to an integer
 
 #include <unistd.h>
 #include <strings.h>
+#include <string.h>
 
-void error(const char *msg)
+void error(const char *message)
 {
-  perror(msg);
+  perror(message);
   exit(1);
 }
 
-int main(int argc, char *argv[])
+int main(int argument_counter, char *argument_vector[])
 {
-  /* argc = 2 */
-  if (argc < 2)
+  /* argument_counter = 2 */
+  if (argument_counter < 2)
   {
     fprintf(stderr, "Port not provided. Program terminated\n");
     exit(1);
   }
 
-  int sockfd, newsockfd, portno, n;
+  int socket_file_descriptor, new_socket_file_descriptor, port_number, result, i;
   char buffer[255];
 
-  struct sockaddr_in server_addr, cli_addr;
+  struct sockaddr_in server_address, client_address;
 
-  socklen_t clilen;
+  socklen_t client_length;
 
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  socket_file_descriptor = socket(AF_INET, SOCK_STREAM, 0);
 
-  if (sockfd < 0)
+  if (socket_file_descriptor < 0)
   {
     error("Error opening Socket.\n");
   }
 
-  bzero((char *)&server_addr, sizeof(server_addr));
+  bzero((char *)&server_address, sizeof(server_address));
 
-  portno = atoi(argv[1]);
+  port_number = atoi(argument_vector[1]);
 
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_addr.s_addr = INADDR_ANY;
-  server_addr.sin_port = htons(portno);
+  server_address.sin_family = AF_INET;
+  server_address.sin_addr.s_addr = INADDR_ANY;
+  server_address.sin_port = htons(port_number);
 
-  if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-  {
+  if (bind(socket_file_descriptor, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)
     error("Binding failed.\n");
-  }
+
+  listen(socket_file_descriptor, 5);
+  /* 5 -> Max limit of client connections */
+  client_length = sizeof(client_address);
+
+  new_socket_file_descriptor = accept(socket_file_descriptor, (struct sockaddr *)&client_address, &client_length);
+
+  if (new_socket_file_descriptor < 0)
+    error("Error on accept.\n");
+
+  do
+  {
+    bzero(buffer, 255);
+
+    result = read(new_socket_file_descriptor, buffer, 255);
+
+    if (result < 0)
+      error("Error on reading.\n");
+
+    printf("Client: %s\n", buffer);
+
+    bzero(buffer, 255);
+
+    fgets(buffer, 255, stdin);
+
+    result = write(new_socket_file_descriptor, buffer, strlen(buffer));
+
+    if (result < 0)
+      error("Error on writing.\n");
+
+    i = strncmp("Bye", buffer, 3);
+
+    /* Modified to a do while and not use break statements */
+  } while (i != 0);
+  close(new_socket_file_descriptor);
+  close(socket_file_descriptor);
+
+  return 0;
 }
