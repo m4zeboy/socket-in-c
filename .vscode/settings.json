@@ -1,6 +1,7 @@
 {
   "files.associations": {
     "*.css": "tailwindcss",
-    "strings.h": "c"
+    "strings.h": "c",
+    "string.h": "c"
   }
 }
