@@ -1,9 +1,9 @@
 /*
-  filename server_ipaddress portno
+  filename server_ipaddress port_number
 
   argv[0] filename
   argv[1] server_ipaddress
-  argv[2] portno
+  argv[2] port_number
 */
 
 #include <stdio.h>
@@ -24,8 +24,8 @@ void error(const char *message)
 
 int main(int argument_counter, char *argument_vector[])
 {
-  int sockfd, portno, n, i;
-  struct sockaddr_in serv_addr;
+  int socket_file_descriptor, port_number, n, i;
+  struct sockaddr_in server_address;
   struct hostent *server;
   char buffer[255];
 
@@ -35,10 +35,10 @@ int main(int argument_counter, char *argument_vector[])
     exit(1);
   }
 
-  portno = atoi(argument_vector[2]);
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  port_number = atoi(argument_vector[2]);
+  socket_file_descriptor = socket(AF_INET, SOCK_STREAM, 0);
 
-  if (sockfd < 0)
+  if (socket_file_descriptor < 0)
     error("Error opening socket.\n");
 
   server = gethostbyname(argument_vector[1]);
@@ -47,13 +47,13 @@ int main(int argument_counter, char *argument_vector[])
     fprintf(stderr, "Error, no such host.\n");
   }
 
-  bzero((char *)&serv_addr, sizeof(serv_addr));
+  bzero((char *)&server_address, sizeof(server_address));
 
-  serv_addr.sin_family = AF_INET;
-  bcopy((char *)server->h_addr_list[0], (char *)&serv_addr.sin_addr.s_addr, server->h_length);
-  serv_addr.sin_port = htons(portno);
+  server_address.sin_family = AF_INET;
+  bcopy((char *)server->h_addr_list[0], (char *)&server_address.sin_addr.s_addr, server->h_length);
+  server_address.sin_port = htons(port_number);
 
-  if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+  if (connect(socket_file_descriptor, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)
   {
     error("Connection failed.\n");
   }
@@ -62,11 +62,11 @@ int main(int argument_counter, char *argument_vector[])
   {
     bzero(buffer, 255);
     fgets(buffer, 255, stdin);
-    n = write(sockfd, buffer, strlen(buffer));
+    n = write(socket_file_descriptor, buffer, strlen(buffer));
     if (n < 0)
       error("Error on writing.\n");
     bzero(buffer, 255);
-    n = read(sockfd, buffer, 255);
+    n = read(socket_file_descriptor, buffer, 255);
     if (n < 0)
       error("Error on reading.\n");
 
@@ -74,6 +74,6 @@ int main(int argument_counter, char *argument_vector[])
 
     i = strncmp("Bye", buffer, 3);
   } while (i != 0);
-  close(sockfd);
+  close(socket_file_descriptor);
   return 0;
 }
